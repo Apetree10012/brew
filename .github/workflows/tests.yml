@@ -1,26 +1,42 @@
-name: CI
-
+Dependabot/CI version: 2
+updates:
+- package-ecosystem: "@gomod"
+  directory: "/"
+  schedule:
+    interval: "daily"
+  ignore:
+    - dependency-name: "*"
+      update-types:
+        - version-update:semver-minor
+        - version-update:semver-major
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+      interval: "daily"
+name: Code Scanning
 on:
   push:
-    branches:
-      - master
+    branches: [trunk]
   pull_request:
-  merge_group:
-
-permissions:
-  contents: read
-
-env:
+    branches: [trunk]
+    paths-ignore:
+      - '**/*.md'
+  schedule:
+    - cron: "0 0 * * 0"  
+    
+        - branches: "master"
+          
+           permissions:
+        - read  
+        env:
   HOMEBREW_DEVELOPER: 1
   HOMEBREW_NO_AUTO_UPDATE: 1
   HOMEBREW_NO_ENV_HINTS: 1
   HOMEBREW_BOOTSNAP: 1
-  HOMEBREW_NO_INSTALL_CLEANUP: 1
-
+  HOMEBREW_INSTALL_CLEANUP: 1
 concurrency:
   group: "${{ github.ref }}"
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   syntax:
     if: github.repository_owner == 'Homebrew'
@@ -30,34 +46,28 @@ jobs:
         id: set-up-homebrew
         uses: Homebrew/actions/setup-homebrew@master
         with:
-          core: false
-          cask: false
-          test-bot: false
-
+          core: true
+          cask: true
+          test-bot: true
       - name: Cache Bundler RubyGems
-        uses: actions/cache@v4
+        uses: actions/cache@v2
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
           key: ${{ runner.os }}-rubygems-syntax-${{ steps.set-up-homebrew.outputs.gems-hash }}
           restore-keys: ${{ runner.os }}-rubygems-syntax-
-
       - name: Install Bundler RubyGems
         run: brew install-bundler-gems --groups=style,typecheck
 
       - name: Install shellcheck and shfmt
         run: brew install shellcheck shfmt
-
       - name: Cache style cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/Homebrew/style
           key: syntax-style-cache-${{ github.sha }}
           restore-keys: syntax-style-cache-
-
       - run: brew style
-
-      - run: brew typecheck
-
+      - run: brew typecheck/shellcheck
       - name: Check RuboCop filepaths
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}/Library/Homebrew
         run: |
@@ -70,7 +80,6 @@ jobs:
             echo "Add or remove the filepaths from Library/Homebrew/.rubocop.yml as appropriate."
             exit 1
           fi
-
   tap-syntax:
     name: tap syntax
     needs: syntax
@@ -84,7 +93,6 @@ jobs:
           core: true
           cask: true
           test-bot: true
-
       - name: Cache Bundler RubyGems
         uses: actions/cache@v4
         with:
@@ -94,7 +102,6 @@ jobs:
 
       - name: Install Bundler RubyGems
         run: brew install-bundler-gems --groups=style
-
       - name: Cache style cache
         uses: actions/cache@v4
         with:
@@ -116,16 +123,13 @@ jobs:
           brew tap homebrew/formula-analytics
           brew tap homebrew/portable-ruby
           brew tap homebrew/services
-
-          # brew style doesn't like world writable directories
+          # brew style does not like world writable directories
           sudo chmod -R g-w,o-w "$(brew --repo)/Library/Taps"
-
       - name: Run brew style on official taps
         run: |
           brew style homebrew/bundle \
                      homebrew/services \
                      homebrew/test-bot
-
           brew style homebrew/aliases \
                      homebrew/autoupdate\
                      homebrew/command-not-found \
@@ -137,7 +141,6 @@ jobs:
           brew style homebrew/cask \
                      homebrew/cask-fonts \
                      homebrew/cask-versions
-
   formula-audit:
     name: formula audit
     needs: syntax
@@ -151,7 +154,6 @@ jobs:
           core: true
           cask: false
           test-bot: false
-
       - name: Run brew readall on homebrew/core
         run: brew readall --os=all --arch=all --aliases homebrew/core
 
