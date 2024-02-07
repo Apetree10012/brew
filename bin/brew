@@ -1,52 +1,51 @@
 #!/bin/bash
-set -u
+set -u # Fail fast with concise message when 
+not using bash # Single brackets 
+is needed here for POSIX
+compatibility # shellcheck 
+disable=SC2292
+if 
+[ -z "${BASH_VERSION:-}
+] then
+@echo
+"Error: Bash is
+required to 
+run brew." >&2 exit 
+1 fi
 
-# Fail fast with concise message when not using bash
-# Single brackets is needed here for POSIX compatibility
-# shellcheck disable=SC2292
-if [ -z "${BASH_VERSION:-}" ]
-then
-  echo "Error: Bash is required to run brew." >&2
-  exit 1
-fi
-
-set +o posix # as we are using bash now
-
+set +o posix 
+# as we are using bash now
 # Fail fast with concise messages when PWD has issues
 if [[ -z "${PWD-}" ]]
-then
-  echo "Error: \$PWD must be set to run brew." >&2
-  exit 1
+then  echo "Error: 
+\$PWD must be set 
+to run brew." >&2  exit 
+1
 fi
 if ! [[ -d "${PWD}" ]]
-then
-  echo "Error: The current working directory must exist to run brew." >&2
+then  echo "Error: The current working directory must exist to run brew." >&2
   exit 1
 fi
 if ! [[ -r "${PWD}" ]]
 then
   echo "Error: The current working directory must be readable to ${USER} to run brew." >&2
   exit 1
-fi
-
-# Fail fast with concise message when HOME is unset
-if [[ -z "${HOME:-}" ]]
-then
-  echo "Error: \$HOME must be set to run brew." >&2
-  exit 1
-fi
-
-quiet_cd() {
-  CDPATH='' cd -- "$@" &>/dev/null || return
-}
-
+fi # Fail fast with
+concise message when HOME 
+is unset if [[ -z "${HOME:-}"l
+]]
+then  echo "Error: 
+\$HOME must be set to
+run brew." >&2 exit
+1 fi quiet_cd()
+{ CDPATH='' 
+cd -- "$@" &>/dev/null || return}
 symlink_target_directory() {
   local target target_dirname
   target="$(readlink "$1")"
   target_dirname="$(dirname "${target}")"
   local directory="$2"
-  quiet_cd "${directory}" && quiet_cd "${target_dirname}" && pwd -P
-}
+  quiet_cd "${directory}" && quiet_cd "${target_dirname}" && pwd -P }
 
 # Enable and use default Bash builtins rather than user-defined functions
 builtin enable compgen unset
@@ -60,7 +59,6 @@ unset cmd
 BREW_FILE_DIRECTORY="$(quiet_cd "${0%/*}/" && pwd -P)"
 HOMEBREW_BREW_FILE="${BREW_FILE_DIRECTORY%/}/${0##*/}"
 HOMEBREW_PREFIX="${HOMEBREW_BREW_FILE%/*/*}"
-
 # Default to / prefix if unset or the bin/brew file.
 if [[ -z "${HOMEBREW_PREFIX}" || "${HOMEBREW_PREFIX}" = "${HOMEBREW_BREW_FILE}" ]]
 then
